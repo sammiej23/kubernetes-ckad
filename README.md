@@ -1,5 +1,5 @@
 # kubernetes-ckad
-Commands used in CKAD along with reference YAML files
+This repo contains commands used in CKAD along with reference YAML files.
 
 In Q4 2020, I studied for the Kubernetes Application Developer Certification, 
 [following this course](https://www.udemy.com/course/certified-kubernetes-application-developer/). 
