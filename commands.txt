@@ -1,0 +1,165 @@
+
+kubectl get pods // gets pods in default namespace
+kubectl get pods --namespace=kube-system
+
+kubctl describe pods
+
+## Get existing running pod's yaml 
+kubectl get pod nginx-deployment-1006230814-6winp -o yaml
+// Create a new pod using a yaml definition file
+kubectl apply -f pod-definition-filename.yaml
+
+## Create pod using YAML file
+
+kubectl create -f pod-definition-filename.yaml // creates pods in default namespace
+kubectl create -f pod-definition-filename.yaml --namespace=kube-system
+// can also add namespace to pod definition file
+
+## Create pod the imperative way
+kubectl run podName --image=nginx --restart=Never
+kubectl run podName --image=nginx --restart=Never --dry-run -o yaml > bee.yaml // this does a dry run and outputs the yaml to a file without creating the pod
+
+## Create deployments
+kubectl create deployment blue --image=nginx
+kubectl scale deployment blue --replicas=6
+// get the deployments above and save it into a yaml file
+kubectl get deployments.apps podName -o yaml > podNameDeployment.yaml
+// delete deployments
+kubectl delete deployments.apps blue
+// run the deployment
+kubectl apply -f podNameDeployment.yaml
+// see all deployments in all namespaces
+kubectl get deployments --all-namespaces
+
+## Create namespace
+kubectl create -f namespace-definition.yaml
+kubectl create namespace myNameSpace
+// Default is the namespace - by default! - you can change the default namespace so you don't have to pass
+// namespace parameter all the time by:
+kubectl config set-context $(kubectl config current-context) --namespace=new-namespace
+
+//View pods in all namespaces:
+kubectl get pods --all-namespaces
+// get pods in namespace
+kubectl get pods --namespace theNameSpace
+kubectl describe pod podName --namespace theNameSpace
+
+//Get pods and services in a specific namespace:
+kubectl -n nameSpace get pod,svc
+
+kubectl delete pod podName
+
+
+
+//can extract existing pod config yaml and output it to a new file
+kubectl get pod webapp -o yaml > my-new-pod.yaml
+// OR
+kubectl get pod <pod-name> -o yaml > pod-definition.yaml
+
+##configMaps
+Use configMaps to reuse and inject env variable values into pod definition files
+
+
+kubectl create configmap app-config --from-file=app_config.properties
+kubectl create configmap app-config --from-literal=APP-COLOR=darkblue
+kubectl get configMaps
+kubectl describe configMaps
+
+## secrets 
+// Secrets = usernames and passwords - can't store them in plain text in code or in configmaps!
+// So need to hash/encode them - store them within "kubernetes secret" file and inject them into the pod
+// Imperative way:
+kubectl create secret generic app-secret --from-literal=DB_Host=mysql
+//Declarative way:
+kubectl create secret generic app-secret --from-file=app-secret.properties
+
+// base-64 encoding secrets:
+echo -n 'password' | base64
+
+// inject into pod by adding the following into the pod definition yaml file:
+envFrom:
+  secretRef:
+    name: app-secret
+
+
+// taints and tolerations:
+// nodes have taints, pods have tolerations
+kubectl taint nodes node-name key=value:taint-effect
+// where 'taint-effect' is NoSchedule | PreferNoSchedule | NoExecute
+//examples:
+kubectl taint nodes node1 app=blue:NoSchedule
+// get taint on the master node
+kubectl describe node kubemaster | grep Taint
+// remove taint on master
+kibectl describe nodes master | grep -i taint // returns the taint name
+kubectl taint node master taintName- // this removes the taint
+
+// get nodes
+kubectl get nodes
+kubectl get pods -o wide // so you can see which node the pod is on
+
+// label nodes
+kubectl label nodes nodeName size=Large
+kubectl get nodes nodeName --show-labels // get the labels on a node
+
+//look at logs inside app
+kubectl -n elastic-stack exec -it app cat /log/app.log
+kubectl exec name-of-pod -- cat /log/location-file.log
+
+kubectl logs -f podName 
+kubectl logs podName -c containerName // if there's more than one container you need to specify which one to look at the logs for
+
+## metrics
+kubectl top node
+kubectl top pod
+
+## labels
+kubectl get pods --selector labelName=labelValue // add a label
+kubectl describe pods | grep labelName // find out how many pods have the labelName
+kubectl get pods --show-labels // list pods and their labels
+kubectl get pods -l env=dev // list pods with label of env, value of dev
+kubectl get pods -l env=dev --no-headers | wc -l // returns number of pods
+kubectl get pods -l label1=value,label2=value,label3=value // returns pod with labels
+kubectl get all --selector env=prod //get all objects that have the label env with value prod
+kubectl describe pods | grep -B 7 prod // get 7 lines before "prod"
+
+## Deployment history
+kubectl create -f deployment/my-app-deployment.yml
+kubectl apply -f deployment/my-app-deployment.yml //update deployment
+kubectl rollout status deployment/my-app-deployment
+kubectl rollout history deployment/my-app-deployment
+kubectl rollout undo deployment/my-app-deployment // rollback deployment
+
+Kubectl get all
+kubectl get rollout status deployment/my-app-deployment
+kubectl get history status deployment/my-app-deployment
+kubectl create -f deployment-definition.yml --record // record steps
+kubectl get rollout history deployment/my-app-deployment
+
+kubectl set image deployment/my-app-deployment nginx-container=nginx:1.12
+kubectl rollout undo deployment/my-app-deployment
+
+kubectl edit deployment deploymentName
+
+## create jobs
+// spin up containers to run jobs then tear them down again
+kubectl create -f job-definition.yml
+kubectl logs podName // the job outputs to stdout, so you can see the output in the logs
+kubectl delete job job-name // from the metadata name field in job-definition.yml
+
+## Cron jobs
+kubectl create -f cro-job-definition.yml
+kubectl get cronjob
+
+## services
+kubectl create -f service-definitiona.yml
+kubectl get services
+// services use labels and selectors to match the services to pods and applications
+
+## Ingress
+kubectl get ingress --all-namespaces
+kubectl -n app-space describe ingress ingress-wear-watch
+kubectl -n app-space get ingress ingress-wear-watch -o yaml > ingress.yaml // get the ingress controller deployment and send to a file
+kubectl -n app-space delete ingress ingress-wear-watch // delete ingress controller
+
+## persistent volumes
